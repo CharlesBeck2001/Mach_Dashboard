@@ -25,7 +25,6 @@ elif page == "Trading Data Visualizations":
     
     # Supabase credentials
     supabase_url = "https://fzkeftdzgseugijplhsh.supabase.co"
-    #supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6a2VmdGR6Z3NldWdpanBsaHNoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjcxMzk3NCwiZXhwIjoyMDQ4Mjg5OTc0fQ.Og46ddAeoybqUavWBAUbUoj8HJiZrfAQZi-6gRP46i4"
     supabase_key = st.secrets["supabase_key"]
     
     sql_query1 = """  
@@ -365,7 +364,6 @@ elif page == "Volume Distribution":
     
     # Supabase credentials
     supabase_url = "https://fzkeftdzgseugijplhsh.supabase.co"
-    #supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6a2VmdGR6Z3NldWdpanBsaHNoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjcxMzk3NCwiZXhwIjoyMDQ4Mjg5OTc0fQ.Og46ddAeoybqUavWBAUbUoj8HJiZrfAQZi-6gRP46i4"
     supabase_key = st.secrets["supabase_key"]
     sql_query1 = """
     SELECT 
@@ -651,7 +649,6 @@ elif page == "Volume Flow Chart":
     
     # Supabase credentials
     supabase_url = "https://fzkeftdzgseugijplhsh.supabase.co"
-    #supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6a2VmdGR6Z3NldWdpanBsaHNoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjcxMzk3NCwiZXhwIjoyMDQ4Mjg5OTc0fQ.Og46ddAeoybqUavWBAUbUoj8HJiZrfAQZi-6gRP46i4"
     supabase_key = st.secrets["supabase_key"]
     
     sql_query1 = """  
@@ -767,8 +764,8 @@ elif page == "Fill Time":
     
     # Supabase credentials
     supabase_url = "https://fzkeftdzgseugijplhsh.supabase.co"
-    supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6a2VmdGR6Z3NldWdpanBsaHNoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjcxMzk3NCwiZXhwIjoyMDQ4Mjg5OTc0fQ.Og46ddAeoybqUavWBAUbUoj8HJiZrfAQZi-6gRP46i4"
-
+    supabase_key = st.secrets["supabase_key"]
+    
     sql_query1 = """
     WITH deduplicated AS (
         SELECT 
@@ -1025,7 +1022,6 @@ elif page == "New Users":
     
     # Supabase credentials
     supabase_url = "https://fzkeftdzgseugijplhsh.supabase.co"
-    #supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6a2VmdGR6Z3NldWdpanBsaHNoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjcxMzk3NCwiZXhwIjoyMDQ4Mjg5OTc0fQ.Og46ddAeoybqUavWBAUbUoj8HJiZrfAQZi-6gRP46i4"
     supabase_key = st.secrets["supabase_key"]
     sql_query1 = """
     WITH ranked_orders AS (
@@ -1127,9 +1123,7 @@ elif page == "New Users":
 elif page == "CCTP Data":
     
     supabase_url_2 = "https://lgujolalhjnsrfuhzlkq.supabase.co"
-    supabase_key_2 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxndWpvbGFsaGpuc3JmdWh6bGtxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcyNDU0NTgwMCwiZXhwIjoyMDQwMTIxODAwfQ.f9g2UA0-aGbbwWujrFooC8O7RXGQt5nz-eTxTvtUDqk"
-
-
+    supabase_key_2 = st.secrets["supabase_key_2"]
     sql_query1 = """  
     WITH cctp_table AS (
     SELECT DATE(created_at) AS transfer_date, SUM(CAST(amount AS FLOAT)) AS total_amount

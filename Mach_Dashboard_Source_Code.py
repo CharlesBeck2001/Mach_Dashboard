@@ -21,6 +21,8 @@ page = st.selectbox("Choose a page", ["Home", "Trading Data Visualizations", "Vo
 
 if page == "Home":
     st.write("Welcome to the dashboard for Mach, a world class cryptocurrency exchange!")
+
+    st.image("85OjUjeR_400x400.jpg")
 elif page == "Trading Data Visualizations":
     
     # Supabase credentials

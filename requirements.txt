@@ -1,1 +1,7 @@
-
+requests
+pandas
+matplotlib
+streamlit
+numpy
+altair
+plotly.graph_objects

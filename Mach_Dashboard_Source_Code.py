@@ -945,13 +945,14 @@ elif page == "Volume Flow Chart":
         dest_chain,
         dest_id,
         SUM(source_volume) AS total_source_volume,
-        SUM(dest_volume) AS total_dest_volume
+        SUM(dest_volume) AS total_dest_volume,
+        SUM(source_volume) + SUM(dest_volume) AS total_overall_volume
     FROM 
         overall_volume_table
     GROUP BY 
         source_chain, source_id, dest_chain, dest_id
     ORDER BY 
-        total_source_volume DESC
+        total_overall_volume DESC
     LIMIT 15
     """
 

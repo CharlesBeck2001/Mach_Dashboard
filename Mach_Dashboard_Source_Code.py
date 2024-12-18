@@ -763,157 +763,123 @@ INNER JOIN dest_volume_table dvt
     # Streamlit title
     st.title("Volume Distribution")
 
+    # User filter for source pairs    
+    st.sidebar.header("Source Volume Filters")
+    source_chains = st.sidebar.multiselect(
+        "Select Source Chains", 
+        options=df_source_chain_volume["source_chain"].unique(),
+        default=df_source_chain_volume["source_chain"].unique()
+    )
+    source_ids = st.sidebar.multiselect(
+        "Select Source IDs", 
+        options=df_source_chain_volume["source_id"].unique(),
+        default=df_source_chain_volume["source_id"].unique()
+    )
+
+    # User filter for destination pairs
+    st.sidebar.header("Destination Volume Filters")
+    dest_chains = st.sidebar.multiselect(
+        "Select Destination Chains", 
+        options=df_dest_chain_volume["dest_chain"].unique(),
+        default=df_dest_chain_volume["dest_chain"].unique()
+    )
+    dest_ids = st.sidebar.multiselect(
+        "Select Destination IDs", 
+        options=df_dest_chain_volume["dest_id"].unique(),
+        default=df_dest_chain_volume["dest_id"].unique()
+    )
+
+    # User filter for total volume pairs
+    st.sidebar.header("Total Volume Filters")
+    total_chains = st.sidebar.multiselect(
+        "Select Chains", 
+        options=df_total_chain_volume["chain"].unique(),
+        default=df_total_chain_volume["chain"].unique()
+    )
+    total_assets = st.sidebar.multiselect(
+        "Select Assets", 
+        options=df_total_chain_volume["asset"].unique(),
+        default=df_total_chain_volume["asset"].unique()
+    )
+
+    
     with st.container():
-        
         col1, col2, col3 = st.columns([1, 1, 1])
-        
+
         with col1:
-            
             st.write("Source Volume")
-            # Group data by 'dest_chain' and 'dest_id', summing up 'dest_volume'
-            grouped_df = df_source_chain_volume.groupby(["source_chain", "source_id"], as_index=False)["source_volume"].sum()
 
-            # Sort data by 'dest_chain' and 'dest_id'
-            grouped_df = grouped_df.sort_values(by=["source_chain", "source_id"])
-            
-            # Sort data by 'source_chain' and sum of 'source_volume'
-            chain_order = grouped_df.groupby('source_chain')['source_volume'].sum().sort_values(ascending=False).index
+            # Apply filters
+            filtered_source_df = df_source_chain_volume[
+                (df_source_chain_volume["source_chain"].isin(source_chains)) & 
+                (df_source_chain_volume["source_id"].isin(source_ids))
+            ]
 
-            
-            # Define a selection for highlighting on hover
-            highlight = alt.selection_single(
-                on="mouseover",  # Trigger selection on hover
-                fields=["source_chain", "source_id"],  # Selection is based on these fields
-                nearest=True,
-                empty="none"
-                )
+            grouped_df = filtered_source_df.groupby(["source_chain", "source_id"], as_index=False)["source_volume"].sum()
+            chain_order = grouped_df.groupby("source_chain")["source_volume"].sum().sort_values(ascending=False).index
 
-            # Altair Stacked Bar Chart with Diagonal Labels and Hover Highlight
-            base = (
-                alt.Chart(grouped_df)
-                .mark_bar()
-                .encode(
-                    x=alt.X(
-                        "source_chain:N", 
-                        title="Source Chain",
-                        sort = chain_order,
-                        axis=alt.Axis(labelAngle=-45)  # Set diagonal angle for x-axis labels
-                        ),
-                    y=alt.Y("source_volume:Q", title="Total Volume"),
-                    color=alt.Color("source_id:N", title="Source ID", scale=alt.Scale(scheme="category20")),
-                    tooltip=["source_chain", "source_id", "source_volume"]
-                    )
-                )
+            base = alt.Chart(grouped_df).mark_bar().encode(
+                x=alt.X("source_chain:N", title="Source Chain", sort=chain_order, axis=alt.Axis(labelAngle=-45)),
+                y=alt.Y("source_volume:Q", title="Total Volume"),
+                color=alt.Color("source_id:N", title="Source ID", scale=alt.Scale(scheme="category20")),
+                tooltip=["source_chain", "source_id", "source_volume"]
+            )
 
-            # Add conditional opacity for highlighting
-            highlighted_chart = base.encode(
-                opacity=alt.condition(highlight, alt.value(1), alt.value(0.6))
-                ).add_selection(highlight)
+            highlight = alt.selection_single(on="mouseover", fields=["source_chain", "source_id"], nearest=True, empty="none")
+            highlighted_chart = base.encode(opacity=alt.condition(highlight, alt.value(1), alt.value(0.6))).add_selection(highlight)
 
-            #st.subheader("Source Volume")
-
-            # Display the interactive chart in Streamlit
             st.altair_chart(highlighted_chart, use_container_width=True)
 
-        
         with col2:
-            
             st.write("Destination Volume")
-            #Group data by 'dest_chain' and 'dest_id', summing up 'dest_volume'
-            grouped_df = df_dest_chain_volume.groupby(["dest_chain", "dest_id"], as_index=False)["dest_volume"].sum()
 
-            # Sort data by 'dest_chain' and 'dest_id'
-            grouped_df = grouped_df.sort_values(by=["dest_chain", "dest_id"])
-            
-            # Sort data by 'source_chain' and sum of 'source_volume'
-            chain_order = grouped_df.groupby('dest_chain')['dest_volume'].sum().sort_values(ascending=False).index
-            
-            # Define a selection for highlighting on hover
-            highlight = alt.selection_single(
-                on="mouseover",  # Trigger selection on hover
-                fields=["dest_chain", "dest_id"],  # Selection is based on these fields
-                nearest=True,
-                empty="none"
-                )
+            # Apply filters
+            filtered_dest_df = df_dest_chain_volume[
+                (df_dest_chain_volume["dest_chain"].isin(dest_chains)) & 
+                (df_dest_chain_volume["dest_id"].isin(dest_ids))
+            ]
 
-            # Altair Stacked Bar Chart with Diagonal Labels and Hover Highlight
-            base = (
-                alt.Chart(grouped_df)
-                .mark_bar()
-                .encode(
-                    x=alt.X(
-                        "dest_chain:N", 
-                        title="Destination Chain",
-                        sort = chain_order,
-                        axis=alt.Axis(labelAngle=-45)  # Set diagonal angle for x-axis labels
-                        ),
-                    y=alt.Y("dest_volume:Q", title="Total Volume"),
-                    color=alt.Color("dest_id:N", title="Destination ID", scale=alt.Scale(scheme="category20")),
-                    tooltip=["dest_chain", "dest_id", "dest_volume"]
-                    )
-                )
+            grouped_df = filtered_dest_df.groupby(["dest_chain", "dest_id"], as_index=False)["dest_volume"].sum()
+            chain_order = grouped_df.groupby("dest_chain")["dest_volume"].sum().sort_values(ascending=False).index
 
-            # Add conditional opacity for highlighting
-            highlighted_chart = base.encode(
-                opacity=alt.condition(highlight, alt.value(1), alt.value(0.6))
-                ).add_selection(highlight)
+            base = alt.Chart(grouped_df).mark_bar().encode(
+                x=alt.X("dest_chain:N", title="Destination Chain", sort=chain_order, axis=alt.Axis(labelAngle=-45)),
+                y=alt.Y("dest_volume:Q", title="Total Volume"),
+                color=alt.Color("dest_id:N", title="Destination ID", scale=alt.Scale(scheme="category20")),
+                tooltip=["dest_chain", "dest_id", "dest_volume"]
+            )
 
-            #st.subheader("Destination Volume")
+            highlight = alt.selection_single(on="mouseover", fields=["dest_chain", "dest_id"], nearest=True, empty="none")
+            highlighted_chart = base.encode(opacity=alt.condition(highlight, alt.value(1), alt.value(0.6))).add_selection(highlight)
 
-            # Display the interactive chart in Streamlit
             st.altair_chart(highlighted_chart, use_container_width=True)
 
-        
         with col3:
-        
             st.write("Total Volume")
-            # Group data by 'dest_chain' and 'dest_id', summing up 'dest_volume'
-            grouped_df = df_total_chain_volume.groupby(["chain", "asset"], as_index=False)["total_volume"].sum()
 
-            # Sort data by 'dest_chain' and 'dest_id'
-            grouped_df = grouped_df.sort_values(by=["chain", "asset"])
-            
-            # Sort data by 'source_chain' and sum of 'source_volume'
-            chain_order = grouped_df.groupby('chain')['total_volume'].sum().sort_values(ascending=False).index
-            
-            # Define a selection for highlighting on hover
-            highlight = alt.selection_single(
-                on="mouseover",  # Trigger selection on hover
-                fields=["chain", "asset"],  # Selection is based on these fields
-                nearest=True,
-                empty="none"
-                )
+            # Apply filters
+            filtered_total_df = df_total_chain_volume[
+                (df_total_chain_volume["chain"].isin(total_chains)) & 
+                (df_total_chain_volume["asset"].isin(total_assets))
+            ]
 
-            # Altair Stacked Bar Chart with Diagonal Labels and Hover Highlight
-            base = (
-                alt.Chart(grouped_df)
-                .mark_bar()
-                .encode(
-                    x=alt.X(
-                        "chain:N", 
-                        title="Chain",
-                        sort = chain_order,
-                        axis=alt.Axis(labelAngle=-45)  # Set diagonal angle for x-axis labels
-                        ),
-                    y=alt.Y("total_volume:Q", title="Total Volume"),
-                    color=alt.Color("asset:N", title="Asset ID", scale=alt.Scale(scheme="category20")),
-                    tooltip=["chain", "asset", "total_volume"]
-                    )
-                )
+            grouped_df = filtered_total_df.groupby(["chain", "asset"], as_index=False)["total_volume"].sum()
+            chain_order = grouped_df.groupby("chain")["total_volume"].sum().sort_values(ascending=False).index
 
-            # Add conditional opacity for highlighting
-            highlighted_chart = base.encode(
-                opacity=alt.condition(highlight, alt.value(1), alt.value(0.6))
-                ).add_selection(highlight)
+            base = alt.Chart(grouped_df).mark_bar().encode(
+                x=alt.X("chain:N", title="Chain", sort=chain_order, axis=alt.Axis(labelAngle=-45)),
+                y=alt.Y("total_volume:Q", title="Total Volume"),
+                color=alt.Color("asset:N", title="Asset ID", scale=alt.Scale(scheme="category20")),
+                tooltip=["chain", "asset", "total_volume"]
+            )
 
-            #st.subheader("Overall Volume")
+            highlight = alt.selection_single(on="mouseover", fields=["chain", "asset"], nearest=True, empty="none")
+            highlighted_chart = base.encode(opacity=alt.condition(highlight, alt.value(1), alt.value(0.6))).add_selection(highlight)
 
-            # Display the interactive chart in Streamlit
             st.altair_chart(highlighted_chart, use_container_width=True)
-
-    # Calculate total volume by asset
-    asset_volume = df_total_chain_volume.groupby('asset')['total_volume'].sum().reset_index()
-    asset_volume['percent'] = 100 * asset_volume['total_volume'] / asset_volume['total_volume'].sum()
+        # Calculate total volume by asset
+        asset_volume = df_total_chain_volume.groupby('asset')['total_volume'].sum().reset_index()
+        asset_volume['percent'] = 100 * asset_volume['total_volume'] / asset_volume['total_volume'].sum()
 
     # Create the first pie chart for asset distribution using Altair
     pie_asset = alt.Chart(asset_volume).mark_arc().encode(

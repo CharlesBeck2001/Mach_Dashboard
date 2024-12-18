@@ -952,6 +952,7 @@ elif page == "Volume Flow Chart":
         source_chain, source_id, dest_chain, dest_id
     ORDER BY 
         total_source_volume DESC
+    LIMIT 15
     """
 
     def execute_sql(query):

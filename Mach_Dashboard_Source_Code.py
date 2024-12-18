@@ -987,6 +987,20 @@ elif page == "Volume Flow Chart":
    
     st.title("Flow Chart for 15 Most Significant Pairs")
 
+        # Allow users to customize asset selection
+    all_assets = sorted(
+        set(df_volume_flow_chart['source_id']).union(set(df_volume_flow_chart['dest_id']))
+    )
+    selected_sources = st.multiselect("Select Source Assets:", all_assets, default=all_assets[:5])
+    selected_destinations = st.multiselect("Select Destination Assets:", all_assets, default=all_assets[:5])
+
+    # Filter dataframe based on user selections
+    if selected_sources or selected_destinations:
+        df_volume_flow_chart = df_volume_flow_chart[
+            df_volume_flow_chart['source_id'].isin(selected_sources) &
+            df_volume_flow_chart['dest_id'].isin(selected_destinations)
+        ]
+    
     # Create source and target columns by combining source_id with source_chain, and similarly for dest
     df_volume_flow_chart['source'] = df_volume_flow_chart['source_id'] + " - " + df_volume_flow_chart['source_chain']
     df_volume_flow_chart['target'] = df_volume_flow_chart['dest_id'] + " - " + df_volume_flow_chart['dest_chain']

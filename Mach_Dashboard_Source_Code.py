@@ -988,11 +988,12 @@ elif page == "Volume Flow Chart":
     # Set up the Streamlit page without sidebar
    
     st.title("Flow Chart for 15 Most Significant Pairs")
-
+    
         # Allow users to customize asset selection
     all_assets = sorted(
         set(df_volume_flow_chart['source_id']).union(set(df_volume_flow_chart['dest_id']))
     )
+    st.dataframe(all_assets)
     selected_sources = st.multiselect("Select Source Assets:", all_assets, default=all_assets[:5])
     selected_destinations = st.multiselect("Select Destination Assets:", all_assets, default=all_assets[:5])
 

@@ -515,12 +515,61 @@ elif page == "Volume Distribution":
     supabase_url = "https://fzkeftdzgseugijplhsh.supabase.co"
     supabase_key = st.secrets["supabase_key"]
     sql_query1 = """
+    WITH source_volume_table AS(
+SELECT DISTINCT
+  op.*, 
+  ti.decimals as source_decimal,
+  cal.id as source_id,
+  cal.chain as source_chain,
+  cmd.current_price::FLOAT AS source_price,
+  (cmd.current_price::FLOAT * op.source_quantity) / POWER(10, ti.decimals) AS source_volume
+FROM order_placed op
+INNER JOIN match_executed me
+  ON op.order_uuid = me.order_uuid
+INNER JOIN token_info ti
+  ON op.source_asset = ti.address  -- Get source asset decimals
+INNER JOIN coingecko_assets_list cal
+  ON op.source_asset = cal.address
+INNER JOIN coingecko_market_data cmd 
+  ON cal.id = cmd.id
+),
+dest_volume_table AS(
+SELECT DISTINCT
+  op.*, 
+  ti.decimals as dest_decimal,
+  cal.id as dest_id,
+  cal.chain as dest_chain,
+  cmd.current_price::FLOAT AS dest_price,
+  (cmd.current_price::FLOAT * op.dest_quantity) / POWER(10, ti.decimals) AS dest_volume
+FROM order_placed op
+INNER JOIN match_executed me
+  ON op.order_uuid = me.order_uuid
+INNER JOIN token_info ti
+  ON op.dest_asset = ti.address  -- Get source asset decimals
+INNER JOIN coingecko_assets_list cal
+  ON op.dest_asset = cal.address
+INNER JOIN coingecko_market_data cmd 
+  ON cal.id = cmd.id
+),
+overall_volume_table_2 AS(
+SELECT DISTINCT
+  svt.*,
+  dvt.dest_id as dest_id,
+  dvt.dest_chain as dest_chain,
+  dvt.dest_decimal as dest_decimal,
+  dvt.dest_price as dest_price,
+  dvt.dest_volume as dest_volume,
+  (dvt.dest_volume + svt.source_volume) as total_volume
+FROM source_volume_table svt
+INNER JOIN dest_volume_table dvt
+  ON svt.order_uuid = dvt.order_uuid
+)
     SELECT 
         source_chain, 
         source_id, 
         SUM(source_volume) AS source_volume
     FROM 
-        overall_volume_table
+        overall_volume_table_2
     GROUP BY 
         source_chain, 
         source_id
@@ -530,12 +579,61 @@ elif page == "Volume Distribution":
     """
 
     sql_query2 = """
+    WITH source_volume_table AS(
+SELECT DISTINCT
+  op.*, 
+  ti.decimals as source_decimal,
+  cal.id as source_id,
+  cal.chain as source_chain,
+  cmd.current_price::FLOAT AS source_price,
+  (cmd.current_price::FLOAT * op.source_quantity) / POWER(10, ti.decimals) AS source_volume
+FROM order_placed op
+INNER JOIN match_executed me
+  ON op.order_uuid = me.order_uuid
+INNER JOIN token_info ti
+  ON op.source_asset = ti.address  -- Get source asset decimals
+INNER JOIN coingecko_assets_list cal
+  ON op.source_asset = cal.address
+INNER JOIN coingecko_market_data cmd 
+  ON cal.id = cmd.id
+),
+dest_volume_table AS(
+SELECT DISTINCT
+  op.*, 
+  ti.decimals as dest_decimal,
+  cal.id as dest_id,
+  cal.chain as dest_chain,
+  cmd.current_price::FLOAT AS dest_price,
+  (cmd.current_price::FLOAT * op.dest_quantity) / POWER(10, ti.decimals) AS dest_volume
+FROM order_placed op
+INNER JOIN match_executed me
+  ON op.order_uuid = me.order_uuid
+INNER JOIN token_info ti
+  ON op.dest_asset = ti.address  -- Get source asset decimals
+INNER JOIN coingecko_assets_list cal
+  ON op.dest_asset = cal.address
+INNER JOIN coingecko_market_data cmd 
+  ON cal.id = cmd.id
+),
+overall_volume_table_2 AS(
+SELECT DISTINCT
+  svt.*,
+  dvt.dest_id as dest_id,
+  dvt.dest_chain as dest_chain,
+  dvt.dest_decimal as dest_decimal,
+  dvt.dest_price as dest_price,
+  dvt.dest_volume as dest_volume,
+  (dvt.dest_volume + svt.source_volume) as total_volume
+FROM source_volume_table svt
+INNER JOIN dest_volume_table dvt
+  ON svt.order_uuid = dvt.order_uuid
+)
     SELECT 
         dest_chain, 
         dest_id, 
         SUM(dest_volume) AS dest_volume
     FROM 
-        overall_volume_table
+        overall_volume_table_2
     GROUP BY 
         dest_chain, 
         dest_id
@@ -544,7 +642,57 @@ elif page == "Volume Distribution":
         dest_id
     """
 
-    sql_query3 = """SELECT 
+    sql_query3 = """
+    WITH source_volume_table AS(
+SELECT DISTINCT
+  op.*, 
+  ti.decimals as source_decimal,
+  cal.id as source_id,
+  cal.chain as source_chain,
+  cmd.current_price::FLOAT AS source_price,
+  (cmd.current_price::FLOAT * op.source_quantity) / POWER(10, ti.decimals) AS source_volume
+FROM order_placed op
+INNER JOIN match_executed me
+  ON op.order_uuid = me.order_uuid
+INNER JOIN token_info ti
+  ON op.source_asset = ti.address  -- Get source asset decimals
+INNER JOIN coingecko_assets_list cal
+  ON op.source_asset = cal.address
+INNER JOIN coingecko_market_data cmd 
+  ON cal.id = cmd.id
+),
+dest_volume_table AS(
+SELECT DISTINCT
+  op.*, 
+  ti.decimals as dest_decimal,
+  cal.id as dest_id,
+  cal.chain as dest_chain,
+  cmd.current_price::FLOAT AS dest_price,
+  (cmd.current_price::FLOAT * op.dest_quantity) / POWER(10, ti.decimals) AS dest_volume
+FROM order_placed op
+INNER JOIN match_executed me
+  ON op.order_uuid = me.order_uuid
+INNER JOIN token_info ti
+  ON op.dest_asset = ti.address  -- Get source asset decimals
+INNER JOIN coingecko_assets_list cal
+  ON op.dest_asset = cal.address
+INNER JOIN coingecko_market_data cmd 
+  ON cal.id = cmd.id
+),
+overall_volume_table_2 AS(
+SELECT DISTINCT
+  svt.*,
+  dvt.dest_id as dest_id,
+  dvt.dest_chain as dest_chain,
+  dvt.dest_decimal as dest_decimal,
+  dvt.dest_price as dest_price,
+  dvt.dest_volume as dest_volume,
+  (dvt.dest_volume + svt.source_volume) as total_volume
+FROM source_volume_table svt
+INNER JOIN dest_volume_table dvt
+  ON svt.order_uuid = dvt.order_uuid
+)
+    SELECT 
         chain AS chain,
         asset AS asset,
         SUM(volume) AS total_volume
@@ -555,7 +703,7 @@ elif page == "Volume Distribution":
             source_id AS asset, 
             source_volume AS volume
         FROM 
-            overall_volume_table
+            overall_volume_table_2
 
         UNION ALL
 
@@ -565,7 +713,7 @@ elif page == "Volume Distribution":
             dest_id AS asset, 
             dest_volume AS volume
         FROM 
-            overall_volume_table
+            overall_volume_table_2
     ) AS combined_data
     GROUP BY 
         chain, 

@@ -983,15 +983,17 @@ elif page == "Volume Flow Chart":
     df_volume_flow_chart = execute_sql(sql_query1)
 
     df_volume_flow_chart = pd.json_normalize(df_volume_flow_chart['result'])
-    st.dataframe(df_volume_flow_chart)
 
     # Set up the Streamlit page without sidebar
    
     st.title("Flow Chart for 15 Most Significant Pairs")
     
-        # Allow users to customize asset selection
-    all_assets = set(df_volume_flow_chart['source_id']).union(set(df_volume_flow_chart['dest_id']))
-    st.dataframe(all_assets)
+    # Extract source and destination assets while maintaining their original order
+    all_assets = list(df_volume_flow_chart['source_id'].unique()) + list(df_volume_flow_chart['dest_id'].unique())
+
+    # Remove duplicates to get a unique list of assets while preserving the original order
+    all_assets = list(dict.fromkeys(all_assets))  # This preserves the order and removes duplicates
+    
     selected_sources = st.multiselect("Select Source Assets:", all_assets, default=all_assets[:5])
     selected_destinations = st.multiselect("Select Destination Assets:", all_assets, default=all_assets[:5])
 

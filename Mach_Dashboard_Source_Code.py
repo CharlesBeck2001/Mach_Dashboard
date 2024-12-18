@@ -936,7 +936,7 @@ elif page == "Volume Flow Chart":
     
     # Supabase credentials
     supabase_url = "https://fzkeftdzgseugijplhsh.supabase.co"
-    supabase_key = = st.secrets["supabase_key"]
+    supabase_key = st.secrets["supabase_key"]
     
     sql_query1 = """  
     SELECT 

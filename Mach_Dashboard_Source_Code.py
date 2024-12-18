@@ -983,6 +983,7 @@ elif page == "Volume Flow Chart":
     df_volume_flow_chart = execute_sql(sql_query1)
 
     df_volume_flow_chart = pd.json_normalize(df_volume_flow_chart['result'])
+    st.dataframe(df_volume_flow_chart)
 
     # Set up the Streamlit page without sidebar
    

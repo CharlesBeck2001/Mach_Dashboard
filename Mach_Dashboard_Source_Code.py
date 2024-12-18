@@ -890,21 +890,45 @@ INNER JOIN dest_volume_table dvt
         title="Volume by Asset"
     )
 
-    # Calculate total volume by chain
-    chain_volume = df_total_chain_volume.groupby('chain')['total_volume'].sum().reset_index()
+    # Streamlit layout for filtering
+    st.title("Volume Distribution Analysis")
+
+    # Assuming the filters for chains and pairs are defined earlier in the app
+    # Example: 'selected_chains' and 'selected_assets' from multiselect widgets or filtering logic
+
+    # Filter the dataframe based on the user's selection
+    filtered_total_df = df_total_chain_volume[
+        (df_total_chain_volume["chain"].isin(selected_chains)) & 
+        (df_total_chain_volume["asset"].isin(selected_assets))
+    ]
+
+    # Recalculate total volume by chain for the filtered data
+    chain_volume = filtered_total_df.groupby('chain')['total_volume'].sum().reset_index()
     chain_volume['percent'] = 100 * chain_volume['total_volume'] / chain_volume['total_volume'].sum()
 
-    # Create the second pie chart for chain distribution using Altair
+    # Create the pie chart for chain distribution using Altair
     pie_chain = alt.Chart(chain_volume).mark_arc().encode(
         theta=alt.Theta(field="total_volume", type="quantitative"),
-        color=alt.Color(field="chain", type="nominal"),
+        color=alt.Color(field="chain", type="nominal", title="Chain"),
         tooltip=['chain', 'total_volume', 'percent']
     ).properties(
         title="Volume by Chain"
     )
 
-    # Streamlit layout
-    st.title('Volume Distribution Analysis')
+    # Recalculate total volume by asset for the filtered data
+    asset_volume = filtered_total_df.groupby('asset')['total_volume'].sum().reset_index()
+    asset_volume['percent'] = 100 * asset_volume['total_volume'] / asset_volume['total_volume'].sum()
+
+    # Create the pie chart for asset distribution using Altair
+    pie_asset = alt.Chart(asset_volume).mark_arc().encode(
+        theta=alt.Theta(field="total_volume", type="quantitative"),
+        color=alt.Color(field="asset", type="nominal", title="Asset"),
+        tooltip=['asset', 'total_volume', 'percent']
+    ).properties(
+        title="Volume by Asset"
+    )
+
+    # Display the pie charts
     st.altair_chart(pie_asset, use_container_width=True)
     st.altair_chart(pie_chain, use_container_width=True)
 

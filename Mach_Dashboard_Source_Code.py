@@ -898,8 +898,8 @@ INNER JOIN dest_volume_table dvt
 
     # Filter the dataframe based on the user's selection
     filtered_total_df = df_total_chain_volume[
-        (df_total_chain_volume["chain"].isin(selected_chains)) & 
-        (df_total_chain_volume["asset"].isin(selected_assets))
+        (df_total_chain_volume["chain"].isin(total_chains)) & 
+        (df_total_chain_volume["asset"].isin(total_assets))
     ]
 
     # Recalculate total volume by chain for the filtered data

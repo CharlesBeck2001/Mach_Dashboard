@@ -933,61 +933,12 @@ INNER JOIN dest_volume_table dvt
     st.altair_chart(pie_chain, use_container_width=True)
 
 elif page == "Volume Flow Chart":
+
     # Supabase credentials
     supabase_url = "https://fzkeftdzgseugijplhsh.supabase.co"
-    supabase_key = st.secrets["supabase_key"]
-    
-    # SQL query
+    supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6a2VmdGR6Z3NldWdpanBsaHNoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjcxMzk3NCwiZXhwIjoyMDQ4Mjg5OTc0fQ.Og46ddAeoybqUavWBAUbUoj8HJiZrfAQZi-6gRP46i4"
+
     sql_query1 = """  
-    WITH source_volume_table AS(
-    SELECT DISTINCT
-      op.*, 
-      ti.decimals as source_decimal,
-      cal.id as source_id,
-      cal.chain as source_chain,
-      cmd.current_price::FLOAT AS source_price,
-      (cmd.current_price::FLOAT * op.source_quantity) / POWER(10, ti.decimals) AS source_volume
-    FROM order_placed op
-    INNER JOIN match_executed me
-      ON op.order_uuid = me.order_uuid
-    INNER JOIN token_info ti
-      ON op.source_asset = ti.address
-    INNER JOIN coingecko_assets_list cal
-      ON op.source_asset = cal.address
-    INNER JOIN coingecko_market_data cmd 
-      ON cal.id = cmd.id
-    ),
-    dest_volume_table AS(
-    SELECT DISTINCT
-      op.*, 
-      ti.decimals as dest_decimal,
-      cal.id as dest_id,
-      cal.chain as dest_chain,
-      cmd.current_price::FLOAT AS dest_price,
-      (cmd.current_price::FLOAT * op.dest_quantity) / POWER(10, ti.decimals) AS dest_volume
-    FROM order_placed op
-    INNER JOIN match_executed me
-      ON op.order_uuid = me.order_uuid
-    INNER JOIN token_info ti
-      ON op.dest_asset = ti.address
-    INNER JOIN coingecko_assets_list cal
-      ON op.dest_asset = cal.address
-    INNER JOIN coingecko_market_data cmd 
-      ON cal.id = cmd.id
-    ),
-    overall_volume_table_2 AS(
-    SELECT DISTINCT
-      svt.*,
-      dvt.dest_id as dest_id,
-      dvt.dest_chain as dest_chain,
-      dvt.dest_decimal as dest_decimal,
-      dvt.dest_price as dest_price,
-      dvt.dest_volume as dest_volume,
-      (dvt.dest_volume + svt.source_volume) as total_volume
-    FROM source_volume_table svt
-    INNER JOIN dest_volume_table dvt
-      ON svt.order_uuid = dvt.order_uuid
-    )
     SELECT 
         source_chain,
         source_id,
@@ -996,7 +947,7 @@ elif page == "Volume Flow Chart":
         SUM(source_volume) AS total_source_volume,
         SUM(dest_volume) AS total_dest_volume
     FROM 
-        overall_volume_table_2
+        overall_volume_table
     GROUP BY 
         source_chain, source_id, dest_chain, dest_id
     ORDER BY 
@@ -1017,72 +968,59 @@ elif page == "Volume Flow Chart":
             data = response.json()
             return pd.DataFrame(data)
         else:
-            st.error(f"Error executing query: {response.status_code}")
+            print("Error executing query:", response.status_code, response.json())
             return pd.DataFrame()
 
-    # Fetch data
+    # Call the function and normalize the dataframe
     df_volume_flow_chart = execute_sql(sql_query1)
     df_volume_flow_chart = pd.json_normalize(df_volume_flow_chart['result'])
 
-    # Default values for filters
-    default_sources = df_volume_flow_chart['source_id'].unique().tolist()
-    default_destinations = df_volume_flow_chart['dest_id'].unique().tolist()
-
-    # Sidebar for customization
-    st.sidebar.header("Customize Flow Chart")
-    selected_sources = st.sidebar.multiselect(
-        "Select Source Assets",
-        options=default_sources,
-        default=default_sources
+    # Allow users to customize asset selection
+    all_assets = sorted(
+        set(df_volume_flow_chart['source_id']).union(set(df_volume_flow_chart['dest_id']))
     )
-    selected_destinations = st.sidebar.multiselect(
-        "Select Destination Assets",
-        options=default_destinations,
-        default=default_destinations
-    )
+    selected_sources = st.multiselect("Select Source Assets:", all_assets, default=all_assets[:5])
+    selected_destinations = st.multiselect("Select Destination Assets:", all_assets, default=all_assets[:5])
 
-    # Apply filters to the data
-    filtered_df = df_volume_flow_chart[
-        (df_volume_flow_chart['source_id'].isin(selected_sources)) &
-        (df_volume_flow_chart['dest_id'].isin(selected_destinations))
-    ]
+    # Filter dataframe based on user selections
+    if selected_sources or selected_destinations:
+        df_volume_flow_chart = df_volume_flow_chart[
+            df_volume_flow_chart['source_id'].isin(selected_sources) &
+            df_volume_flow_chart['dest_id'].isin(selected_destinations)
+        ]
 
-    # Create source and target columns
-    filtered_df['source'] = filtered_df['source_id'] + " - " + filtered_df['source_chain']
-    filtered_df['target'] = filtered_df['dest_id'] + " - " + filtered_df['dest_chain']
-    filtered_df['value'] = filtered_df['total_source_volume']
+    # Create source and target columns for Sankey diagram
+    df_volume_flow_chart['source'] = df_volume_flow_chart['source_id'] + " - " + df_volume_flow_chart['source_chain']
+    df_volume_flow_chart['target'] = df_volume_flow_chart['dest_id'] + " - " + df_volume_flow_chart['dest_chain']
+    df_volume_flow_chart['value'] = df_volume_flow_chart['total_source_volume']
 
-    # Handle case where no data matches the filters
-    if filtered_df.empty:
-        st.error("No data matches the selected filters. Please adjust your selections.")
-    else:
-        # Sankey diagram preparation
-        nodes = set(filtered_df['source']).union(set(filtered_df['target']))
-        node_label_mapping = {node: i for i, node in enumerate(nodes)}
-        source_indices = filtered_df['source'].map(node_label_mapping)
-        target_indices = filtered_df['target'].map(node_label_mapping)
-        values = filtered_df['value']
+    # Prepare nodes for Sankey diagram
+    nodes = set(df_volume_flow_chart['source']).union(set(df_volume_flow_chart['target']))
+    node_label_mapping = {node: i for i, node in enumerate(nodes)}
+    source_indices = [node_label_mapping[source] for source in df_volume_flow_chart['source']]
+    target_indices = [node_label_mapping[target] for target in df_volume_flow_chart['target']]
+    values = df_volume_flow_chart['value']
 
-        # Create Sankey diagram
-        fig = go.Figure(data=[go.Sankey(
-            node=dict(
-                pad=15,
-                thickness=20,
-                line=dict(color="black", width=0.5),
-                label=list(nodes),
-                color="blue"
-            ),
-            link=dict(
-                source=source_indices,
-                target=target_indices,
-                value=values,
-                color="rgba(255, 0, 0, 0.4)"
-            )
-        )])
+    # Create Sankey diagram using Plotly
+    fig = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=15,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=list(nodes),
+            color="blue"
+        ),
+        link=dict(
+            source=source_indices,
+            target=target_indices,
+            value=values,
+            color="rgba(255, 0, 0, 0.4)"
+        )
+    )])
 
-        # Display Sankey diagram
-        st.title("Flow Chart for Selected Pairs")
-        st.plotly_chart(fig)
+    # Display the Sankey diagram
+    st.title("Flow Chart for Custom Pairs")
+    st.plotly_chart(fig)
 
 elif page == "Fill Time":
     

@@ -986,7 +986,7 @@ elif page == "Volume Flow Chart":
 
     # Set up the Streamlit page without sidebar
    
-    st.title("Flow Chart for 15 Most Significant Pairs")
+    st.title("Volume Flow Chart")
     
     # Extract source and destination assets while maintaining their original order
     all_assets = list(df_volume_flow_chart['source_id'].unique()) + list(df_volume_flow_chart['dest_id'].unique())

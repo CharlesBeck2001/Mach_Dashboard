@@ -933,7 +933,7 @@ INNER JOIN dest_volume_table dvt
     st.altair_chart(pie_chain, use_container_width=True)
 
 elif page == "Volume Flow Chart":
-
+    
     # Supabase credentials
     supabase_url = "https://fzkeftdzgseugijplhsh.supabase.co"
     supabase_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6a2VmdGR6Z3NldWdpanBsaHNoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjcxMzk3NCwiZXhwIjoyMDQ4Mjg5OTc0fQ.Og46ddAeoybqUavWBAUbUoj8HJiZrfAQZi-6gRP46i4"
@@ -961,65 +961,90 @@ elif page == "Volume Flow Chart":
             "Authorization": f"Bearer {supabase_key}",
             "Content-Type": "application/json"
         }
+        # Endpoint for the RPC function
         rpc_endpoint = f"{supabase_url}/rest/v1/rpc/execute_sql"
+        
+        # Payload with the SQL query
         payload = {"query": query}
+        
+        # Make the POST request to the RPC function
         response = requests.post(rpc_endpoint, headers=headers, json=payload)
+        
+        # Handle response
         if response.status_code == 200:
             data = response.json()
-            return pd.DataFrame(data)
+            df = pd.DataFrame(data)
+            return df
         else:
             print("Error executing query:", response.status_code, response.json())
-            return pd.DataFrame()
 
-    # Call the function and normalize the dataframe
+    # Call the function
     df_volume_flow_chart = execute_sql(sql_query1)
+
     df_volume_flow_chart = pd.json_normalize(df_volume_flow_chart['result'])
 
-    # Allow users to customize asset selection
-    all_assets = sorted(
-        set(df_volume_flow_chart['source_id']).union(set(df_volume_flow_chart['dest_id']))
-    )
-    selected_sources = st.multiselect("Select Source Assets:", all_assets, default=all_assets[:5])
-    selected_destinations = st.multiselect("Select Destination Assets:", all_assets, default=all_assets[:5])
+    # Set up the Streamlit page without sidebar
+   
+    st.title("Flow Chart for 15 Most Significant Pairs")
 
-    # Filter dataframe based on user selections
-    if selected_sources or selected_destinations:
-        df_volume_flow_chart = df_volume_flow_chart[
-            df_volume_flow_chart['source_id'].isin(selected_sources) &
-            df_volume_flow_chart['dest_id'].isin(selected_destinations)
-        ]
-
-    # Create source and target columns for Sankey diagram
+    # Create source and target columns by combining source_id with source_chain, and similarly for dest
     df_volume_flow_chart['source'] = df_volume_flow_chart['source_id'] + " - " + df_volume_flow_chart['source_chain']
     df_volume_flow_chart['target'] = df_volume_flow_chart['dest_id'] + " - " + df_volume_flow_chart['dest_chain']
     df_volume_flow_chart['value'] = df_volume_flow_chart['total_source_volume']
 
-    # Prepare nodes for Sankey diagram
-    nodes = set(df_volume_flow_chart['source']).union(set(df_volume_flow_chart['target']))
-    node_label_mapping = {node: i for i, node in enumerate(nodes)}
-    source_indices = [node_label_mapping[source] for source in df_volume_flow_chart['source']]
-    target_indices = [node_label_mapping[target] for target in df_volume_flow_chart['target']]
+    # Sample structure of df_volume_flow_chart, assuming it's already loaded
+    # df_volume_flow_chart = pd.DataFrame({
+    #     'source': ['A1', 'A2', 'A1', 'B1', 'B2', 'B2'],
+    #     'target': ['B1', 'B2', 'B2', 'C1', 'C1', 'C2'],
+    #     'value': [8, 4, 2, 8, 4, 2]
+    # })
+
+    # Step 1: Identify duplicate nodes between source and target
+    nodes = set(df_volume_flow_chart['source']).union(set(df_volume_flow_chart['target']))  # Get all unique nodes
+
+    # Step 2: Create a mapping for nodes that appear in both source and target
+    node_label_mapping = {}
+    for node in nodes:
+        # If the node is in both source and target, modify the target name by adding "(D)"
+        if node in df_volume_flow_chart['source'].values and node in df_volume_flow_chart['target'].values:
+            node_label_mapping[node] = {'source': node + " (S)", 'target': node + " (D)"}
+        else:
+            node_label_mapping[node] = {'source': node, 'target': node}
+
+    # Step 3: Prepare the list of unique labels for nodes
+    label_names = []
+    for node in node_label_mapping:
+        label_names.append(node_label_mapping[node]['source'])
+        if node_label_mapping[node]['target'] != node_label_mapping[node]['source']:  # Avoid duplicates
+            label_names.append(node_label_mapping[node]['target'])
+
+    # Step 4: Map the source and target columns to the updated labels
+    df_volume_flow_chart['source'] = df_volume_flow_chart['source'].map(lambda x: node_label_mapping[x]['source'])
+    df_volume_flow_chart['target'] = df_volume_flow_chart['target'].map(lambda x: node_label_mapping[x]['target'])
+
+    # Step 5: Prepare Sankey diagram indices
+    source_indices = [label_names.index(source) for source in df_volume_flow_chart['source']]
+    target_indices = [label_names.index(target) for target in df_volume_flow_chart['target']]
     values = df_volume_flow_chart['value']
 
-    # Create Sankey diagram using Plotly
+    # Step 6: Create Sankey diagram using Plotly
     fig = go.Figure(data=[go.Sankey(
         node=dict(
             pad=15,
             thickness=20,
             line=dict(color="black", width=0.5),
-            label=list(nodes),
+            label=label_names,  # Use the correct label names
             color="blue"
         ),
         link=dict(
             source=source_indices,
             target=target_indices,
             value=values,
-            color="rgba(255, 0, 0, 0.4)"
+            color="rgba(255, 0, 0, 0.4)"  # Set link color
         )
     )])
 
-    # Display the Sankey diagram
-    st.title("Flow Chart for Custom Pairs")
+    # Step 7: Display the Sankey diagram using Streamlit
     st.plotly_chart(fig)
 
 elif page == "Fill Time":

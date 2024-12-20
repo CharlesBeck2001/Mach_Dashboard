@@ -1750,6 +1750,7 @@ elif page == "Cumulative Volume Curves":
             if plot_data_list:
                 combined_plot_data = pd.concat(plot_data_list)
 
+                combined_plot_data = combined_plot_data.groupby(['log_total_volume', 'pair'], as_index=False)['cumulative_percentage'].mean()
                 combined_plot_data = combined_plot_data.pivot(index='log_total_volume', columns='pair', values='cumulative_percentage')
                     
                 st.line_chart(plot_data)

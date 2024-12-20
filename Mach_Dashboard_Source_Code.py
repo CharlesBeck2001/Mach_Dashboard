@@ -1491,7 +1491,57 @@ elif page == "Cumulative Volume Curves":
 
     # SQL query to fetch all unique (source_chain, dest_chain) pairs with their total volume sum
     sql_query_pairs = """
-    WITH volume_pairs AS (
+    WITH source_volume_table AS(
+          SELECT DISTINCT
+            op.*, 
+            ti.decimals as source_decimal,
+            cal.id as source_id,
+            cal.chain as source_chain,
+            cmd.current_price::FLOAT AS source_price,
+            (cmd.current_price::FLOAT * op.source_quantity) / POWER(10, ti.decimals) AS source_volume
+          FROM order_placed op
+          INNER JOIN match_executed me
+            ON op.order_uuid = me.order_uuid
+          INNER JOIN token_info ti
+            ON op.source_asset = ti.address
+          INNER JOIN coingecko_assets_list cal
+            ON op.source_asset = cal.address
+          INNER JOIN coingecko_market_data cmd 
+            ON cal.id = cmd.id
+        ),
+        dest_volume_table AS(
+          SELECT DISTINCT
+            op.*, 
+            ti.decimals as dest_decimal,
+            cal.id as dest_id,
+            cal.chain as dest_chain,
+            cmd.current_price::FLOAT AS dest_price,
+            (cmd.current_price::FLOAT * op.dest_quantity) / POWER(10, ti.decimals) AS dest_volume
+          FROM order_placed op
+          INNER JOIN match_executed me
+            ON op.order_uuid = me.order_uuid
+          INNER JOIN token_info ti
+            ON op.dest_asset = ti.address
+          INNER JOIN coingecko_assets_list cal
+            ON op.dest_asset = cal.address
+          INNER JOIN coingecko_market_data cmd 
+            ON cal.id = cmd.id
+        ),
+        overall_volume_table AS(
+          SELECT DISTINCT
+            svt.*,
+            dvt.dest_id as dest_id,
+            dvt.dest_chain as dest_chain,
+            dvt.dest_decimal as dest_decimal,
+            dvt.dest_price as dest_price,
+            dvt.dest_volume as dest_volume,
+            (dvt.dest_volume + svt.source_volume) as total_volume
+          FROM source_volume_table svt
+          INNER JOIN dest_volume_table dvt
+            ON svt.order_uuid = dvt.order_uuid
+          WHERE svt.source_chain = '{source_chain}' AND dvt.dest_chain = '{dest_chain}'
+        ),
+        volume_pairs AS (
       SELECT 
         source_chain, 
         dest_chain, 

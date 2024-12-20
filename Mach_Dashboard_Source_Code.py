@@ -1539,7 +1539,6 @@ elif page == "Cumulative Volume Curves":
           FROM source_volume_table svt
           INNER JOIN dest_volume_table dvt
             ON svt.order_uuid = dvt.order_uuid
-          WHERE svt.source_chain = '{source_chain}' AND dvt.dest_chain = '{dest_chain}'
         ),
         volume_pairs AS (
       SELECT 

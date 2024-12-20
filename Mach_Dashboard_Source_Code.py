@@ -17,7 +17,7 @@ import plotly.graph_objects as go
 st.set_page_config(layout="wide")
 st.title("Mach Dashboard")
 
-page = st.selectbox("Choose a page", ["Home", "Trading Data Visualizations", "Volume Distribution", "Volume Flow Chart", "Fill Time", "New Users", "CCTP Data"])
+page = st.selectbox("Choose a page", ["Home", "Trading Data Visualizations", "Volume Distribution", "Volume Flow Chart", "Fill Time", "New Users", "CCTP Data", "Cumulative Volume Curves"])
 
 if page == "Home":
     st.write("Welcome to the dashboard for Mach, a world class cryptocurrency exchange!")
@@ -1484,16 +1484,111 @@ elif page == "CCTP Data":
         st.subheader('CCTP Volume Data')
         st.write(df_cctp)
 
+elif page == "Cumulative Volume Curves":
 
 
+    supabase_url = "https://fzkeftdzgseugijplhsh.supabase.co"
+    supabase_key = st.secrets["supabase_key"]
+    
+    sql_query1 = """ 
+    WITH source_volume_table AS(
+SELECT DISTINCT
+  op.*, 
+  ti.decimals as source_decimal,
+  cal.id as source_id,
+  cal.chain as source_chain,
+  cmd.current_price::FLOAT AS source_price,
+  (cmd.current_price::FLOAT * op.source_quantity) / POWER(10, ti.decimals) AS source_volume
+FROM order_placed op
+INNER JOIN match_executed me
+  ON op.order_uuid = me.order_uuid
+INNER JOIN token_info ti
+  ON op.source_asset = ti.address  -- Get source asset decimals
+INNER JOIN coingecko_assets_list cal
+  ON op.source_asset = cal.address
+INNER JOIN coingecko_market_data cmd 
+  ON cal.id = cmd.id
+),
+dest_volume_table AS(
+SELECT DISTINCT
+  op.*, 
+  ti.decimals as dest_decimal,
+  cal.id as dest_id,
+  cal.chain as dest_chain,
+  cmd.current_price::FLOAT AS dest_price,
+  (cmd.current_price::FLOAT * op.dest_quantity) / POWER(10, ti.decimals) AS dest_volume
+FROM order_placed op
+INNER JOIN match_executed me
+  ON op.order_uuid = me.order_uuid
+INNER JOIN token_info ti
+  ON op.dest_asset = ti.address  -- Get source asset decimals
+INNER JOIN coingecko_assets_list cal
+  ON op.dest_asset = cal.address
+INNER JOIN coingecko_market_data cmd 
+  ON cal.id = cmd.id
+),
+overall_volume_table AS(
+SELECT DISTINCT
+  svt.*,
+  dvt.dest_id as dest_id,
+  dvt.dest_chain as dest_chain,
+  dvt.dest_decimal as dest_decimal,
+  dvt.dest_price as dest_price,
+  dvt.dest_volume as dest_volume,
+  (dvt.dest_volume + svt.source_volume) as total_volume
+FROM source_volume_table svt
+INNER JOIN dest_volume_table dvt
+  ON svt.order_uuid = dvt.order_uuid
+),
+cumulative_volume AS (
+  SELECT 
+    ovt.*, 
+    SUM(ovt.total_volume) OVER (ORDER BY ovt.total_volume) AS cumulative_sum,
+    SUM(ovt.total_volume) OVER () AS total_volume_sum
+  FROM overall_volume_table ovt
+)
+SELECT 
+  total_volume,
+  (cumulative_sum / total_volume_sum) AS cumulative_percentage
+FROM cumulative_volume
+ORDER BY total_volume
+"""
 
+    
+    def execute_sql(query):
+        headers = {
+            "apikey": supabase_key,
+            "Authorization": f"Bearer {supabase_key}",
+            "Content-Type": "application/json"
+        }
+        # Endpoint for the RPC function
+        rpc_endpoint = f"{supabase_url}/rest/v1/rpc/execute_sql"
+        
+        # Payload with the SQL query
+        payload = {"query": query}
+        
+        # Make the POST request to the RPC function
+        response = requests.post(rpc_endpoint, headers=headers, json=payload)
+        
+        # Handle response
+        if response.status_code == 200:
+            data = response.json()
+            
+            df = pd.DataFrame(data)
+            
+            print("Query executed successfully, returning DataFrame.")
+            return(df)
+        else:
+            print("Error executing query:", response.status_code, response.json())
+            
+    # Call the function
+    df_cumulative_volume = execute_sql(sql_query1)
 
-
-
+    df_cumulative_volume = pd.json_normalize(df_cumulative_volume['result'])
     
     
     
-    
+    st.line_chart(df_cumulative_volume)
     
     
     

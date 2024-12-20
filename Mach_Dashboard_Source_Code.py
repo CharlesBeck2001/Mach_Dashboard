@@ -1486,119 +1486,145 @@ elif page == "CCTP Data":
 
 elif page == "Cumulative Volume Curves":
 
-
     supabase_url = "https://fzkeftdzgseugijplhsh.supabase.co"
     supabase_key = st.secrets["supabase_key"]
-    
-    sql_query1 = """ 
-    WITH source_volume_table AS(
-SELECT DISTINCT
-  op.*, 
-  ti.decimals as source_decimal,
-  cal.id as source_id,
-  cal.chain as source_chain,
-  cmd.current_price::FLOAT AS source_price,
-  (cmd.current_price::FLOAT * op.source_quantity) / POWER(10, ti.decimals) AS source_volume
-FROM order_placed op
-INNER JOIN match_executed me
-  ON op.order_uuid = me.order_uuid
-INNER JOIN token_info ti
-  ON op.source_asset = ti.address  -- Get source asset decimals
-INNER JOIN coingecko_assets_list cal
-  ON op.source_asset = cal.address
-INNER JOIN coingecko_market_data cmd 
-  ON cal.id = cmd.id
-),
-dest_volume_table AS(
-SELECT DISTINCT
-  op.*, 
-  ti.decimals as dest_decimal,
-  cal.id as dest_id,
-  cal.chain as dest_chain,
-  cmd.current_price::FLOAT AS dest_price,
-  (cmd.current_price::FLOAT * op.dest_quantity) / POWER(10, ti.decimals) AS dest_volume
-FROM order_placed op
-INNER JOIN match_executed me
-  ON op.order_uuid = me.order_uuid
-INNER JOIN token_info ti
-  ON op.dest_asset = ti.address  -- Get source asset decimals
-INNER JOIN coingecko_assets_list cal
-  ON op.dest_asset = cal.address
-INNER JOIN coingecko_market_data cmd 
-  ON cal.id = cmd.id
-),
-overall_volume_table AS(
-SELECT DISTINCT
-  svt.*,
-  dvt.dest_id as dest_id,
-  dvt.dest_chain as dest_chain,
-  dvt.dest_decimal as dest_decimal,
-  dvt.dest_price as dest_price,
-  dvt.dest_volume as dest_volume,
-  (dvt.dest_volume + svt.source_volume) as total_volume
-FROM source_volume_table svt
-INNER JOIN dest_volume_table dvt
-  ON svt.order_uuid = dvt.order_uuid
-),
-cumulative_volume AS (
-  SELECT 
-    ovt.*, 
-    SUM(ovt.total_volume) OVER (ORDER BY ovt.total_volume) AS cumulative_sum,
-    SUM(ovt.total_volume) OVER () AS total_volume_sum
-  FROM overall_volume_table ovt
-)
-SELECT 
-  total_volume,
-  (cumulative_sum / total_volume_sum) AS cumulative_percentage
-FROM cumulative_volume
-ORDER BY total_volume
-"""
 
-    
+    # SQL query to fetch all unique (source_chain, dest_chain) pairs with their total volume sum
+    sql_query_pairs = """
+    WITH volume_pairs AS (
+      SELECT 
+        source_chain, 
+        dest_chain, 
+        SUM(total_volume) AS total_volume_sum
+      FROM overall_volume_table
+      GROUP BY source_chain, dest_chain
+    )
+    SELECT * FROM volume_pairs
+    """
+
+    # SQL query to fetch cumulative volume for a specific pair
+    def get_cvf_for_pair(source_chain, dest_chain):
+        return f"""
+        WITH source_volume_table AS(
+          SELECT DISTINCT
+            op.*, 
+            ti.decimals as source_decimal,
+            cal.id as source_id,
+            cal.chain as source_chain,
+            cmd.current_price::FLOAT AS source_price,
+            (cmd.current_price::FLOAT * op.source_quantity) / POWER(10, ti.decimals) AS source_volume
+          FROM order_placed op
+          INNER JOIN match_executed me
+            ON op.order_uuid = me.order_uuid
+          INNER JOIN token_info ti
+            ON op.source_asset = ti.address
+          INNER JOIN coingecko_assets_list cal
+            ON op.source_asset = cal.address
+          INNER JOIN coingecko_market_data cmd 
+            ON cal.id = cmd.id
+        ),
+        dest_volume_table AS(
+          SELECT DISTINCT
+            op.*, 
+            ti.decimals as dest_decimal,
+            cal.id as dest_id,
+            cal.chain as dest_chain,
+            cmd.current_price::FLOAT AS dest_price,
+            (cmd.current_price::FLOAT * op.dest_quantity) / POWER(10, ti.decimals) AS dest_volume
+          FROM order_placed op
+          INNER JOIN match_executed me
+            ON op.order_uuid = me.order_uuid
+          INNER JOIN token_info ti
+            ON op.dest_asset = ti.address
+          INNER JOIN coingecko_assets_list cal
+            ON op.dest_asset = cal.address
+          INNER JOIN coingecko_market_data cmd 
+            ON cal.id = cmd.id
+        ),
+        overall_volume_table AS(
+          SELECT DISTINCT
+            svt.*,
+            dvt.dest_id as dest_id,
+            dvt.dest_chain as dest_chain,
+            dvt.dest_decimal as dest_decimal,
+            dvt.dest_price as dest_price,
+            dvt.dest_volume as dest_volume,
+            (dvt.dest_volume + svt.source_volume) as total_volume
+          FROM source_volume_table svt
+          INNER JOIN dest_volume_table dvt
+            ON svt.order_uuid = dvt.order_uuid
+          WHERE svt.source_chain = '{source_chain}' AND dvt.dest_chain = '{dest_chain}'
+        ),
+        cumulative_volume AS (
+          SELECT 
+            ovt.*, 
+            SUM(ovt.total_volume) OVER (ORDER BY ovt.total_volume) AS cumulative_sum,
+            SUM(ovt.total_volume) OVER () AS total_volume_sum
+          FROM overall_volume_table ovt
+        )
+        SELECT 
+          total_volume,
+          (cumulative_sum / total_volume_sum) AS cumulative_percentage
+        FROM cumulative_volume
+        ORDER BY total_volume
+        """
+
+    # Execute SQL query
     def execute_sql(query):
         headers = {
             "apikey": supabase_key,
             "Authorization": f"Bearer {supabase_key}",
             "Content-Type": "application/json"
         }
-        # Endpoint for the RPC function
         rpc_endpoint = f"{supabase_url}/rest/v1/rpc/execute_sql"
-        
-        # Payload with the SQL query
         payload = {"query": query}
         
-        # Make the POST request to the RPC function
         response = requests.post(rpc_endpoint, headers=headers, json=payload)
         
-        # Handle response
         if response.status_code == 200:
             data = response.json()
-            
             df = pd.DataFrame(data)
-            
-            print("Query executed successfully, returning DataFrame.")
-            return(df)
+            return df
         else:
-            print("Error executing query:", response.status_code, response.json())
-            
-    # Call the function
-    df_cumulative_volume = execute_sql(sql_query1)
+            st.error(f"Error executing query: {response.status_code}")
+            return None
 
-    df_cumulative_volume = pd.json_normalize(df_cumulative_volume['result'])
-    # First, calculate the log10 of the 'total_volume' column
-    df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
+    # Fetch all unique pairs and display them
+    df_pairs = execute_sql(sql_query_pairs)
+    if df_pairs is not None:
+        df_pairs['pair'] = df_pairs['source_chain'] + ' -> ' + df_pairs['dest_chain']
+        df_pairs = df_pairs[['pair', 'total_volume_sum']].sort_values(by='total_volume_sum', ascending=False)
 
-    # Filter out rows where the total_volume is less than 1 (log_total_volume < 0)
-    df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
+        # Add "Total" option
+        pair_options = ['Total'] + df_pairs['pair'].head(3).tolist()
 
-    # Select relevant columns for plotting
-    plot_data = df_filtered[['log_total_volume', 'cumulative_percentage']]
+        # User selects pairs
+        selected_pairs = st.multiselect("Select Pairs", pair_options, default="Total")
 
-    # Plot the line chart
-    st.line_chart(plot_data.set_index('log_total_volume'))
-    
-    
-    
-    
-    
-    
+        # Store the plots in a list to display them later
+        plot_data_list = []
+
+        # Plot the "Total" curve
+        if "Total" in selected_pairs:
+            sql_query_total = get_cvf_for_pair('', '')
+            df_cumulative_volume = execute_sql(sql_query_total)
+            if df_cumulative_volume is not None:
+                df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
+                df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
+                plot_data_list.append(df_filtered[['log_total_volume', 'cumulative_percentage']].set_index('log_total_volume'))
+
+        # Plot selected pair curves
+        for pair in selected_pairs:
+            if pair != "Total":
+                source_chain, dest_chain = pair.split(" -> ")
+                sql_query_pair = get_cvf_for_pair(source_chain, dest_chain)
+                df_cumulative_volume = execute_sql(sql_query_pair)
+                if df_cumulative_volume is not None:
+                    df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
+                    df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
+                    plot_data_list.append(df_filtered[['log_total_volume', 'cumulative_percentage']].set_index('log_total_volume'))
+
+        # Plot all the curves
+        if plot_data_list:
+            for plot_data in plot_data_list:
+                st.line_chart(plot_data)

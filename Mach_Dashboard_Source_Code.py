@@ -1724,6 +1724,7 @@ elif page == "Cumulative Volume Curves":
             if "Total" in selected_pairs:
                 sql_query_total = get_cvf_for_total()
                 df_cumulative_volume = execute_sql(sql_query_total)
+                df_cumulative_volume = pd.json_normalize(df_cumulative_volume['result'])
                 if df_cumulative_volume is not None:
                     df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
                     df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
@@ -1735,6 +1736,7 @@ elif page == "Cumulative Volume Curves":
                     source_chain, dest_chain = pair.split(" -> ")
                     sql_query_pair = get_cvf_for_pair(source_chain, dest_chain)
                     df_cumulative_volume = execute_sql(sql_query_pair)
+                    df_cumulative_volume = pd.json_normalize(df_cumulative_volume['result'])
                     if df_cumulative_volume is not None:
                         df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
                         df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]

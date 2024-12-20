@@ -1589,7 +1589,7 @@ ORDER BY total_volume
     df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
 
     # Filter out rows where the total_volume is less than 1 (log_total_volume < 0)
-    df_filtered = df_cumulative_volume[df_cumulative_volume['total_volume'] >= 0]
+    df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
 
     # Select relevant columns for plotting
     plot_data = df_filtered[['log_total_volume', 'cumulative_percentage']]

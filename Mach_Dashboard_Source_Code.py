@@ -1585,17 +1585,17 @@ ORDER BY total_volume
     df_cumulative_volume = execute_sql(sql_query1)
 
     df_cumulative_volume = pd.json_normalize(df_cumulative_volume['result'])
-    
-    
-    
+    # First, calculate the log10 of the 'total_volume' column
     df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
 
+    # Filter out rows where the total_volume is less than 1 (log_total_volume < 0)
+    df_filtered = df_cumulative_volume[df_cumulative_volume['total_volume'] >= 0]
+
     # Select relevant columns for plotting
-    plot_data = df_cumulative_volume[['log_total_volume', 'cumulative_percentage']]
+    plot_data = df_filtered[['log_total_volume', 'cumulative_percentage']]
 
     # Plot the line chart
     st.line_chart(plot_data.set_index('log_total_volume'))
-
     
     
     

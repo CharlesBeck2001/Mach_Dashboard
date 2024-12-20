@@ -1744,12 +1744,11 @@ elif page == "Cumulative Volume Curves":
 
             # Plot all the curves
             if plot_data_list:
-                for plot_data in plot_data_list:
-                    combined_plot_data = pd.concat(plot_data_list)
+                combined_plot_data = pd.concat(plot_data_list)
 
-                    combined_plot_data = combined_plot_data.pivot(index='log_total_volume', columns='pair', values='cumulative_percentage')
+                combined_plot_data = combined_plot_data.pivot(index='log_total_volume', columns='pair', values='cumulative_percentage')
                     
-                    st.line_chart(plot_data)
+                st.line_chart(plot_data)
         else:
             st.error("Columns 'source_chain' and 'dest_chain' are missing in the response data.")
     else:

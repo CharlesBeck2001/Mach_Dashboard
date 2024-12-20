@@ -1592,39 +1592,45 @@ elif page == "Cumulative Volume Curves":
     # Fetch all unique pairs and display them
     df_pairs = execute_sql(sql_query_pairs)
     if df_pairs is not None:
-        df_pairs['pair'] = df_pairs['source_chain'] + ' -> ' + df_pairs['dest_chain']
-        df_pairs = df_pairs[['pair', 'total_volume_sum']].sort_values(by='total_volume_sum', ascending=False)
+        st.write("Columns in df_pairs:", df_pairs.columns) 
+        if 'source_chain' in df_pairs.columns and 'dest_chain' in df_pairs.columns:
+            df_pairs['pair'] = df_pairs['source_chain'] + ' -> ' + df_pairs['dest_chain']
+            df_pairs = df_pairs[['pair', 'total_volume_sum']].sort_values(by='total_volume_sum', ascending=False)
 
-        # Add "Total" option
-        pair_options = ['Total'] + df_pairs['pair'].head(3).tolist()
+            # Add "Total" option
+            pair_options = ['Total'] + df_pairs['pair'].head(3).tolist()
 
-        # User selects pairs
-        selected_pairs = st.multiselect("Select Pairs", pair_options, default="Total")
+            # User selects pairs
+            selected_pairs = st.multiselect("Select Pairs", pair_options, default="Total")
 
-        # Store the plots in a list to display them later
-        plot_data_list = []
+            # Store the plots in a list to display them later
+            plot_data_list = []
 
-        # Plot the "Total" curve
-        if "Total" in selected_pairs:
-            sql_query_total = get_cvf_for_pair('', '')
-            df_cumulative_volume = execute_sql(sql_query_total)
-            if df_cumulative_volume is not None:
-                df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
-                df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
-                plot_data_list.append(df_filtered[['log_total_volume', 'cumulative_percentage']].set_index('log_total_volume'))
-
-        # Plot selected pair curves
-        for pair in selected_pairs:
-            if pair != "Total":
-                source_chain, dest_chain = pair.split(" -> ")
-                sql_query_pair = get_cvf_for_pair(source_chain, dest_chain)
-                df_cumulative_volume = execute_sql(sql_query_pair)
+            # Plot the "Total" curve
+            if "Total" in selected_pairs:
+                sql_query_total = get_cvf_for_pair('', '')
+                df_cumulative_volume = execute_sql(sql_query_total)
                 if df_cumulative_volume is not None:
                     df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
                     df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
                     plot_data_list.append(df_filtered[['log_total_volume', 'cumulative_percentage']].set_index('log_total_volume'))
 
-        # Plot all the curves
-        if plot_data_list:
-            for plot_data in plot_data_list:
-                st.line_chart(plot_data)
+            # Plot selected pair curves
+            for pair in selected_pairs:
+                if pair != "Total":
+                    source_chain, dest_chain = pair.split(" -> ")
+                    sql_query_pair = get_cvf_for_pair(source_chain, dest_chain)
+                    df_cumulative_volume = execute_sql(sql_query_pair)
+                    if df_cumulative_volume is not None:
+                        df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
+                        df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
+                        plot_data_list.append(df_filtered[['log_total_volume', 'cumulative_percentage']].set_index('log_total_volume'))
+
+            # Plot all the curves
+            if plot_data_list:
+                for plot_data in plot_data_list:
+                    st.line_chart(plot_data)
+        else:
+            st.error("Columns 'source_chain' and 'dest_chain' are missing in the response data.")
+    else:
+        st.error("No data returned from SQL query.")

@@ -1588,7 +1588,7 @@ ORDER BY total_volume
     
     
     
-   df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
+    df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
 
     # Select relevant columns for plotting
     plot_data = df_cumulative_volume[['log_total_volume', 'cumulative_percentage']]

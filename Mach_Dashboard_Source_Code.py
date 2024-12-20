@@ -1706,7 +1706,7 @@ elif page == "Cumulative Volume Curves":
     df_pairs = execute_sql(sql_query_pairs)
     df_pairs = pd.json_normalize(df_pairs['result'])
     if df_pairs is not None:
-        st.write("Columns in df_pairs:", df_pairs.columns) 
+        #st.write("Columns in df_pairs:", df_pairs.columns) 
         if 'source_chain' in df_pairs.columns and 'dest_chain' in df_pairs.columns:
             df_pairs['pair'] = df_pairs['source_chain'] + ' -> ' + df_pairs['dest_chain']
             df_pairs = df_pairs[['pair', 'total_volume_sum']].sort_values(by='total_volume_sum', ascending=False)
@@ -1727,8 +1727,8 @@ elif page == "Cumulative Volume Curves":
                 df_cumulative_volume = pd.json_normalize(df_cumulative_volume['result'])
                 if df_cumulative_volume is not None:
                     df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
-                    df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
-                    plot_data_list.append(df_filtered[['log_total_volume', 'cumulative_percentage']].set_index('log_total_volume'))
+                    #df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
+                    plot_data_list.append(df_cumulative_volume[['log_total_volume', 'cumulative_percentage', 'pair']])
 
             # Plot selected pair curves
             for pair in selected_pairs:
@@ -1739,8 +1739,8 @@ elif page == "Cumulative Volume Curves":
                     df_cumulative_volume = pd.json_normalize(df_cumulative_volume['result'])
                     if df_cumulative_volume is not None:
                         df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
-                        df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
-                        plot_data_list.append(df_filtered[['log_total_volume', 'cumulative_percentage']].set_index('log_total_volume'))
+                        #df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
+                        plot_data_list.append(df_cumulative_volume[['log_total_volume', 'cumulative_percentage', 'pair']])
 
             # Plot all the curves
             if plot_data_list:

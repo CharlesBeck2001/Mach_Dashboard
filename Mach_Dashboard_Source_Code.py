@@ -1753,7 +1753,7 @@ elif page == "Cumulative Volume Curves":
                 combined_plot_data = combined_plot_data.groupby(['log_total_volume', 'pair'], as_index=False)['cumulative_percentage'].mean()
                 combined_plot_data = combined_plot_data.pivot(index='log_total_volume', columns='pair', values='cumulative_percentage')
                     
-                st.line_chart(plot_data)
+                st.line_chart(combined_plot_data)
         else:
             st.error("Columns 'source_chain' and 'dest_chain' are missing in the response data.")
     else:

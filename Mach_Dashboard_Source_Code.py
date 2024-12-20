@@ -1728,7 +1728,8 @@ elif page == "Cumulative Volume Curves":
                 if df_cumulative_volume is not None:
                     #st.write("Columns in df_cumulative_volume (Total):", df_cumulative_volume.columns)
                     df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
-                    st.write("Columns in df_cumulative_volume (Total):", df_cumulative_volume.columns)
+                    #st.write("Columns in df_cumulative_volume (Total):", df_cumulative_volume.columns)
+                    df_cumulative_volume['pair'] = 'Total'
                     #df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
                     plot_data_list.append(df_cumulative_volume[['log_total_volume', 'cumulative_percentage', 'pair']])
 
@@ -1741,6 +1742,7 @@ elif page == "Cumulative Volume Curves":
                     df_cumulative_volume = pd.json_normalize(df_cumulative_volume['result'])
                     if df_cumulative_volume is not None:
                         df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
+                        df_cumulative_volume['pair'] = pair
                         #df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
                         plot_data_list.append(df_cumulative_volume[['log_total_volume', 'cumulative_percentage', 'pair']])
 

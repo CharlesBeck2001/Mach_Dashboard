@@ -1750,15 +1750,15 @@ elif page == "Cumulative Volume Curves":
             if plot_data_list:
                 combined_plot_data = pd.concat(plot_data_list, ignore_index=True)
 
-                # Offset x-values for each pair to avoid overlap
-                offset = 0
-                for pair in selected_pairs:
-                    mask = combined_plot_data['pair'] == pair
-                    combined_plot_data.loc[mask, 'log_total_volume'] += offset
-                    offset += 1  # Increase the offset for each new pair to ensure no overlap
-
+                # Pivot the data to create a separate column for each pair
+                pivoted_data = combined_plot_data.pivot_table(
+                    index='log_total_volume', 
+                    columns='pair', 
+                    values='cumulative_percentage', 
+                    aggfunc='first'  # No averaging, just take the first value for each log_total_volume
+                ).reset_index()
                 # Plot using Streamlit's line_chart function, which will automatically assign colors
-                st.line_chart(combined_plot_data.set_index('log_total_volume')[['cumulative_percentage']])        
+                st.line_chart(pivoted_data.set_index('log_total_volume'))
         
         
             else:

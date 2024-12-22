@@ -1712,7 +1712,7 @@ elif page == "Cumulative Volume Curves":
             df_pairs = df_pairs[['pair', 'total_volume_sum']].sort_values(by='total_volume_sum', ascending=False)
 
             # Add "Total" option
-            pair_options = ['Total'] + df_pairs['pair'].tolist()
+            pair_options = ['Total'] + df_pairs['pair'].head(10).tolist()
 
             # User selects pairs
             selected_pairs = st.multiselect("Select Pairs", pair_options, default="Total")

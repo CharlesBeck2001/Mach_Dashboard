@@ -1758,7 +1758,7 @@ elif page == "Cumulative Volume Curves":
                     aggfunc='first'  # No averaging, just take the first value for each log_total_volume
                 ).reset_index()
                 # Plot using Streamlit's line_chart function, which will automatically assign colors
-                st.line_chart(pivoted_data.set_index('log_total_volume'))
+                st.line_chart(pivoted_data.set_index('log_total_volume'), color = 'pair')
         
         
             else:

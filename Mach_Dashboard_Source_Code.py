@@ -1730,6 +1730,7 @@ elif page == "Cumulative Volume Curves":
                     df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
                     #st.write("Columns in df_cumulative_volume (Total):", df_cumulative_volume.columns)
                     df_cumulative_volume['pair'] = 'Total'
+                    df_cumulative_volume = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
                     #df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
                     plot_data_list.append(df_cumulative_volume[['log_total_volume', 'cumulative_percentage', 'pair']])
 

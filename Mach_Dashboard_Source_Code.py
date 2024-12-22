@@ -1748,14 +1748,20 @@ elif page == "Cumulative Volume Curves":
 
             # Plot all the curves
             if plot_data_list:
-                # Avoid averaging cumulative_percentage across pairs
-                combined_plot_data = pd.concat(plot_data_list,  ignore_index=True)
-                st.write("plot_data_list:", plot_data_list)
-                # Ensure each pair's cumulative_percentage is calculated independently
-                #combined_plot_data = combined_plot_data.pivot_table(index='log_total_volume', columns='pair', values='cumulative_percentage', aggfunc='mean')
-                # Plot all the curves
-                st.line_chart(combined_plot_data.set_index('log_total_volume')[['cumulative_percentage']])
-        else:
-            st.error("Columns 'source_chain' and 'dest_chain' are missing in the response data.")
+                combined_plot_data = pd.concat(plot_data_list, ignore_index=True)
+
+                # Offset x-values for each pair to avoid overlap
+                offset = 0
+                for pair in selected_pairs:
+                    mask = combined_plot_data['pair'] == pair
+                    combined_plot_data.loc[mask, 'log_total_volume'] += offset
+                    offset += 1  # Increase the offset for each new pair to ensure no overlap
+
+                # Plot using Streamlit's line_chart function, which will automatically assign colors
+                st.line_chart(combined_plot_data.set_index('log_total_volume')[['cumulative_percentage']])        
+        
+        
+            else:
+                st.error("Columns 'source_chain' and 'dest_chain' are missing in the response data.")
     else:
         st.error("No data returned from SQL query.")

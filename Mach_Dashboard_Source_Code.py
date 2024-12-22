@@ -1749,7 +1749,7 @@ elif page == "Cumulative Volume Curves":
             # Plot all the curves
             if plot_data_list:
                 combined_plot_data = pd.concat(plot_data_list, ignore_index=True)
-
+                st.write(combined_plot_data)
                 # Pivot the data to create a separate column for each pair
                 pivoted_data = combined_plot_data.pivot_table(
                     index='log_total_volume', 

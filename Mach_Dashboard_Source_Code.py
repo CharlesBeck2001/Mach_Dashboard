@@ -1749,7 +1749,7 @@ elif page == "Cumulative Volume Curves":
             # Plot all the curves
             if plot_data_list:
                 # Avoid averaging cumulative_percentage across pairs
-                combined_plot_data = pd.concat(plot_data_list)
+                combined_plot_data = pd.concat(plot_data_list,  ignore_index=True)
 
                 # Ensure each pair's cumulative_percentage is calculated independently
                 combined_plot_data = combined_plot_data.pivot_table(index='log_total_volume', columns='pair', values='cumulative_percentage', aggfunc='mean')

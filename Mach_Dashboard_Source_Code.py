@@ -1743,13 +1743,13 @@ elif page == "Cumulative Volume Curves":
                     if df_cumulative_volume is not None:
                         df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
                         df_cumulative_volume['pair'] = pair
+                        df_cumulative_volume = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
                         #df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
                         plot_data_list.append(df_cumulative_volume[['log_total_volume', 'cumulative_percentage', 'pair']])
 
             # Plot all the curves
             if plot_data_list:
                 combined_plot_data = pd.concat(plot_data_list, ignore_index=True)
-                st.write(combined_plot_data)
                 # Pivot the data to create a separate column for each pair
                 # Plot using Streamlit's line_chart function, which will automatically assign colors
                 st.line_chart(combined_plot_data, x='log_total_volume', y='cumulative_percentage', color='pair')

@@ -1612,7 +1612,7 @@ elif page == "Cumulative Volume Curves":
             NTILE(1000) OVER (ORDER BY ovt.total_volume) AS volume_bin  -- Split into 1000 bins
           FROM overall_volume_table ovt
           WHERE ovt.total_volume > 1
-        )
+        ),
         ranked_volume AS (
             SELECT 
                 cv.*, 

@@ -402,7 +402,7 @@ INNER JOIN dest_volume_table dvt
 
     # Create a container for the logarithmic volume data plots
     with st.container():
-        st.subheader("Volume Data Plots")
+        st.subheader("Volume Data Plots On A Logarithmic Scale")
         col1, col2, col3 = st.columns([1, 1, 1])  # Equal width for each
 
         with col1:

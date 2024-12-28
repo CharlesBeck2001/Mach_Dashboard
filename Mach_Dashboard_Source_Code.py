@@ -1608,13 +1608,22 @@ elif page == "Cumulative Volume Curves":
           SELECT 
             ovt.*, 
             SUM(ovt.total_volume) OVER (ORDER BY ovt.total_volume) AS cumulative_sum,
-            SUM(ovt.total_volume) OVER () AS total_volume_sum
+            SUM(ovt.total_volume) OVER () AS total_volume_sum,
+            NTILE(1000) OVER (ORDER BY ovt.total_volume) AS volume_bin  -- Split into 1000 bins
           FROM overall_volume_table ovt
+          WHERE ovt.total_volume > 1
+        )
+        ranked_volume AS (
+            SELECT 
+                cv.*, 
+                ROW_NUMBER() OVER (PARTITION BY cv.volume_bin ORDER BY cv.total_volume DESC) AS row_num  -- Rank within each bin
+            FROM cumulative_volume cv
         )
         SELECT 
-          total_volume,
-          (cumulative_sum / total_volume_sum) AS cumulative_percentage
-        FROM cumulative_volume
+            total_volume,
+            (cumulative_sum / total_volume_sum) AS cumulative_percentage
+        FROM ranked_volume
+        WHERE row_num = 1  -- Select the rightmost row from each bin
         ORDER BY total_volume
         """
     def get_cvf_for_total():

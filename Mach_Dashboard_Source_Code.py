@@ -1729,11 +1729,13 @@ elif page == "Cumulative Volume Curves":
             df_pairs['pair'] = df_pairs['source_chain'] + ' -> ' + df_pairs['dest_chain']
             df_pairs = df_pairs[['pair', 'total_volume_sum']].sort_values(by='total_volume_sum', ascending=False)
 
+            # Select top 5 pairs with the most trades and include the "Total" option
+            top_pairs = df_pairs.head(5)['pair'].tolist()
             # Add "Total" option
             pair_options = ['Total'] + df_pairs['pair'].head(10).tolist()
 
             # User selects pairs
-            selected_pairs = st.multiselect("Select Pairs", pair_options, default="Total")
+            selected_pairs = st.multiselect("Select Pairs", pair_options, default=["Total"] + top_pairs)
 
             # Store the plots in a list to display them later
             plot_data_list = []

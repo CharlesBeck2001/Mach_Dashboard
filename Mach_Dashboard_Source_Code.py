@@ -1744,7 +1744,7 @@ elif page == "Cumulative Volume Curves":
             if "Total" in selected_pairs:
                 sql_query_total = get_cvf_for_total()
                 df_cumulative_volume = execute_sql(sql_query_total)
-                st.write(len(df_cumulative_volume['result']))
+                 
                 df_cumulative_volume = pd.json_normalize(df_cumulative_volume['result'])
                 if df_cumulative_volume is not None:
                     #st.write("Columns in df_cumulative_volume (Total):", df_cumulative_volume.columns)

@@ -1725,13 +1725,13 @@ elif page == "Cumulative Volume Curves":
                 sql_query_total = get_cvf_for_total()
                 df_cumulative_volume = execute_sql(sql_query_total)
                 df_cumulative_volume = pd.json_normalize(df_cumulative_volume['result'])
+                st.write(len(df_cumulative_volume))
                 if df_cumulative_volume is not None:
                     #st.write("Columns in df_cumulative_volume (Total):", df_cumulative_volume.columns)
                     df_cumulative_volume['log_total_volume'] = np.log10(df_cumulative_volume['total_volume'])
                     #st.write("Columns in df_cumulative_volume (Total):", df_cumulative_volume.columns)
                     df_cumulative_volume['pair'] = 'Total'
-                    #st.write(df_cumulative_volume)
-                    #df_cumulative_volume = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
+                    df_cumulative_volume = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]
                         
                     #st.write("Tota", df_cumulative_volume)
                     #df_filtered = df_cumulative_volume[df_cumulative_volume['log_total_volume'] >= 0]

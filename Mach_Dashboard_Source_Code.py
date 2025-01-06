@@ -1396,7 +1396,7 @@ elif page == "New Users":
     df_new_addresses = execute_sql(sql_query1)
     df_cumulative_address = execute_sql(sql_query2)
 
-    st.write(df_new_addresses)
+    #st.write(df_new_addresses)
     st.write(df_cumulative_address)
 
     df_new_addresses = pd.json_normalize(df_new_addresses['result'])

@@ -1349,23 +1349,20 @@ elif page == "New Users":
 
 
     sql_query2 = """
-    WITH date_sender_counts AS (
-        SELECT
-            DATE(op.block_timestamp) AS order_date,
-            op.sender_address
-        FROM order_placed op
-        INNER JOIN match_executed me
-        ON op.order_uuid = me.order_uuid
-        GROUP BY order_date, op.sender_address
+    WITH daily_new_senders AS (
+    SELECT
+        DATE(op.block_timestamp) AS order_date,
+        COUNT(DISTINCT op.sender_address) AS new_sender_addresses
+    FROM order_placed op
+    INNER JOIN match_executed me
+    ON op.order_uuid = me.order_uuid
+    GROUP BY order_date
     )
     SELECT
-        ds1.order_date,
-        COUNT(DISTINCT ds2.sender_address) AS cumulative_distinct_sender_addresses
-    FROM date_sender_counts ds1
-    JOIN date_sender_counts ds2
-        ON ds2.order_date <= ds1.order_date
-    GROUP BY ds1.order_date
-    ORDER BY ds1.order_date
+        order_date,
+        CAST(SUM(new_sender_addresses) OVER (ORDER BY order_date) AS BIGINT) AS cumulative_distinct_sender_addresses
+    FROM daily_new_senders
+    ORDER BY order_date
     """
 
     def execute_sql(query):

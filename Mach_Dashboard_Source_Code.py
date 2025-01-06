@@ -1350,13 +1350,13 @@ elif page == "New Users":
 
     sql_query2 = """
     WITH daily_new_senders AS (
-    SELECT
-        DATE(op.block_timestamp) AS order_date,
-        COUNT(DISTINCT op.sender_address) AS new_sender_addresses
-    FROM order_placed op
-    INNER JOIN match_executed me
-    ON op.order_uuid = me.order_uuid
-    GROUP BY order_date
+        SELECT
+            DATE(op.block_timestamp) AS order_date,
+            COUNT(DISTINCT op.sender_address) AS new_sender_addresses
+        FROM order_placed op
+        INNER JOIN match_executed me
+        ON op.order_uuid = me.order_uuid
+        GROUP BY order_date
     )
     SELECT
         order_date,

@@ -1358,7 +1358,6 @@ elif page == "New Users":
         ON op.order_uuid = me.order_uuid
         GROUP BY order_date, op.sender_address
     )
-
     SELECT
         ds1.order_date,
         COUNT(DISTINCT ds2.sender_address) AS cumulative_distinct_sender_addresses

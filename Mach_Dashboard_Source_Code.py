@@ -794,12 +794,12 @@ INNER JOIN dest_volume_table dvt
     total_chains = st.sidebar.multiselect(
         "Select Chains", 
         options=df_total_chain_volume["chain"].unique(),
-        default=df_total_chain_volume["chain"].unique()
+        default=df_total_chain_volume["chain"].unique().header(20)
     )
     total_assets = st.sidebar.multiselect(
         "Select Assets", 
         options=df_total_chain_volume["asset"].unique(),
-        default=df_total_chain_volume["asset"].unique()
+        default=df_total_chain_volume["asset"].unique().header(20)
     )
 
     
